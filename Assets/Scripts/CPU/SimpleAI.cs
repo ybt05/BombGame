@@ -22,6 +22,9 @@ public class SimpleAI : NetworkBehaviour
 
         rb.constraints = RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotation;
 
+        // ✅ これ追加（コア修正）
+        timer = Random.Range(0f, decisionInterval);
+
         PickRandomDirection();
     }
 
@@ -86,12 +89,25 @@ public class SimpleAI : NetworkBehaviour
             float dist = Vector3.Distance(transform.position, target.position);
 
             // ③ 近いなら爆弾
-            if (dist < 2f && Time.time - lastBombTime > bombInterval)
+            if (Time.time - lastBombTime > bombInterval)
             {
-                lastBombTime = Time.time;
-                PlaceBomb();
-                Escape(); // ✅ 追加
-                return;   // ✅ これ重要
+                // ✅ プレイヤー近い
+                if (dist < 2f)
+                {
+                    lastBombTime = Time.time;
+                    PlaceBomb();
+                    Escape();
+                    return;
+                }
+
+                // ✅ 壊せる壁が近い
+                if (IsBreakableNearby())
+                {
+                    lastBombTime = Time.time;
+                    PlaceBomb();
+                    Escape();
+                    return;
+                }
             }
 
             // ④ 追いかける
@@ -161,10 +177,9 @@ public class SimpleAI : NetworkBehaviour
 
         if (spawner != null)
         {
-            spawner.PlaceBombLocalAI(); // ✅ 新しく作る
+            spawner.PlaceBombAI(); // ✅ ここ変更
         }
     }
-
     // =========================
 
     bool IsDanger()
@@ -249,5 +264,28 @@ public class SimpleAI : NetworkBehaviour
         // fallback
         PickRandomDirection();
     }
+    bool IsBreakableNearby()
+    {
+        Vector3[] dirs = new Vector3[]
+        {
+        Vector3.forward,
+        Vector3.back,
+        Vector3.left,
+        Vector3.right
+        };
 
+        foreach (var dir in dirs)
+        {
+            RaycastHit hit;
+            if (Physics.Raycast(transform.position, dir, out hit, 1f))
+            {
+                if (hit.collider.CompareTag("Breakable"))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
 }

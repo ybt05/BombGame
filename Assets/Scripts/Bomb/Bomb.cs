@@ -145,7 +145,7 @@ public class Bomb : NetworkBehaviour
             {
                 var ph = hit.GetComponent<PlayerHealth>();
                 if (ph != null)
-                    ph.TakeDamage(ownerName);
+                    ph.TakeDamage(ownerId);
             }
         }
 
@@ -221,7 +221,7 @@ public class Bomb : NetworkBehaviour
 
                     if (ph != null)
                     {
-                        ph.TakeDamage(ownerName);
+                        ph.TakeDamage(ownerId);
                     }
                 }
                 if (hit.CompareTag("Bomb"))

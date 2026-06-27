@@ -12,6 +12,7 @@ public class PlayerHealth : NetworkBehaviour
     private Renderer[] rends;
     private Coroutine invincibleRoutine;
     private Vector3 initialSpawnPosition;
+    public ulong clientId;
 
 
     void Start()
@@ -25,92 +26,78 @@ public class PlayerHealth : NetworkBehaviour
         initialSpawnPosition = transform.position;
 
     }
-
-    public void TakeDamage(string attackerName)
+    public override void OnNetworkSpawn()
+    {
+        if (!GameMode.IsSingle)
+        {
+            // ✅ プレイヤー
+            if (GetComponent<PlayerController>() != null)
+            {
+                clientId = OwnerClientId;
+            }
+            else
+            {
+                // ✅ CPUはユニークID
+                clientId = (ulong)(100000 + Random.Range(1, 100000));
+            }
+        }
+        else
+        {
+            clientId = (ulong)Random.Range(1, 100000);
+        }
+    }
+    public void TakeDamage(ulong attackerId)
     {
         if (isDead || isInvincible) return;
 
         if (GameMode.IsSingle)
         {
-            ProcessKillByName(attackerName);
+            ProcessKill(attackerId);
             StartCoroutine(Death());
             return;
         }
 
         if (IsServer)
         {
-            ProcessKillByName(attackerName);
+            ProcessKill(attackerId);
             SetDeadClientRpc();
         }
         else
         {
-            TakeDamageServerRpc(attackerName);
+            TakeDamageServerRpc(attackerId);
         }
     }
-
 
     [Rpc(SendTo.Server)]
-    void TakeDamageServerRpc(string attackerName)
+    void TakeDamageServerRpc(ulong attackerId)
     {
-        ProcessKillByName(attackerName);
-        SetDeadClientRpc(); // ✅ 全員に通知
-    }
-
-
-    void ProcessKillByName(string attackerName)
-    {
-        if (attackerName == playerName)
-        {
-            GameManager.Instance.AddDeath(playerName);
-            // ✅ これ追加！！
-            GameManager.Instance.AddKill(playerName, playerName);
-            return;
-        }
-
-        GameManager.Instance.AddKill(attackerName, playerName);
+        ProcessKill(attackerId);
+        SetDeadClientRpc();
     }
 
 
     void ProcessKill(ulong attackerId)
     {
-        // ✅ Networkがない場合安全ガード
-        if (NetworkManager.Singleton == null)
-            return;
+        ulong victimId = clientId;
 
-        string killerName = "Unknown";
-
-        // ✅ attackerが存在する場合
-        if (NetworkManager.Singleton.ConnectedClients.ContainsKey(attackerId))
+        if (attackerId == victimId)
         {
-            var attackerClient = NetworkManager.Singleton.ConnectedClients[attackerId];
-
-            if (attackerClient != null && attackerClient.PlayerObject != null)
-            {
-                var attackerPH = attackerClient.PlayerObject.GetComponent<PlayerHealth>();
-
-                if (attackerPH != null)
-                {
-                    killerName = attackerPH.playerName;
-                }
-            }
-        }
-
-        // ✅ 自分自身（自爆）
-        if (killerName == playerName)
-        {
-            GameManager.Instance.AddDeath(playerName);
+            GameManager.Instance.AddDeath(victimId);
+            GameManager.Instance.AddKill(attackerId, victimId);
             return;
         }
 
-        GameManager.Instance.AddKill(killerName, playerName);
+        GameManager.Instance.AddKill(attackerId, victimId);
     }
-
-
-
-
     IEnumerator Death()
     {
         isDead = true;
+
+        // ✅ 追加：即非表示
+        foreach (var r in rends)
+        {
+            r.enabled = false;
+        }
 
         yield return new WaitForSeconds(5f);
 

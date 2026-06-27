@@ -33,6 +33,7 @@ public class PlayerController : NetworkBehaviour
         if (!GameManager.Instance) return;
 
         if (!GameManager.Instance.IsPlaying) return;
+        if (health != null && health.IsDead()) return;
 
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
@@ -54,6 +55,17 @@ public class PlayerController : NetworkBehaviour
         if (Input.GetMouseButtonDown(1))
         {
             ChangeBomb();
+        }
+
+        // ✅ 左クリックで爆弾
+        if (Input.GetMouseButtonDown(0))
+        {
+            var spawner = GetComponent<BombSpawner>();
+
+            if (spawner != null)
+            {
+                spawner.TryPlaceBomb(); // ✅ 正解
+            }
         }
 
         if (Input.GetKeyDown(KeyCode.C))
@@ -320,6 +332,7 @@ public class PlayerController : NetworkBehaviour
     {
         if (rpcParams.Receive.SenderClientId != OwnerClientId) return;
 
+        TryPunchServer(dir); // ✅ これ追加
     }
 
     void TryPunchServer(Vector3 _)

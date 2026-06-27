@@ -9,11 +9,13 @@ using UnityEngine.SceneManagement;
 
 public struct ScoreData : INetworkSerializable, System.IEquatable<ScoreData>
 {
+    public ulong clientId;   // ✅ 追加
     public FixedString64Bytes name;
     public int score;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
+        serializer.SerializeValue(ref clientId); // ✅ 追加
         serializer.SerializeValue(ref name);
         serializer.SerializeValue(ref score);
     }
@@ -21,7 +23,7 @@ public struct ScoreData : INetworkSerializable, System.IEquatable<ScoreData>
     // ✅ これ追加（超重要）
     public bool Equals(ScoreData other)
     {
-        return name.Equals(other.name) && score == other.score;
+        return clientId == other.clientId; // ✅ 変更
     }
 }
 
@@ -43,6 +45,7 @@ public class GameManager : NetworkBehaviour
     public TextMeshProUGUI scoreText;
     public KillLogManager killLog;
     public GridManager grid;
+    public GameObject cpuPrefab;
 
     public NetworkList<ScoreData> scores = new NetworkList<ScoreData>();
 
@@ -68,12 +71,11 @@ public class GameManager : NetworkBehaviour
 
         foreach (var p in allPlayers)
         {
-            if (added.Contains(p.playerName)) continue;
-
-            added.Add(p.playerName);
+            ulong id = p.clientId;
 
             scores.Add(new ScoreData
             {
+                clientId = id,
                 name = p.playerName,
                 score = 0
             });
@@ -185,54 +187,29 @@ public class GameManager : NetworkBehaviour
 
         UpdateScoreUI();
     }
-    public void AddKill(string killer, string victim)
+    public void AddKill(ulong killerId, ulong victimId)
     {
         if (!IsPlaying) return;
-        bool isSuicide = (killer == victim);
 
-        // ✅ シングルは普通の処理
-        if (GameMode.IsSingle)
-        {
+        bool isSuicide = (killerId == victimId);
 
-            if (!isSuicide)
-                AddKillLocal(killer);
-            killLog?.AddLog(killer, victim);
-            return;
-        }
-
-        if (!IsServer) return;
+        if (!GameMode.IsSingle && !IsServer) return;
 
         if (!isSuicide)
         {
-            bool found = false;
             for (int i = 0; i < scores.Count; i++)
             {
-                if (scores[i].name.ToString() == killer)
+                if (scores[i].clientId == killerId)
                 {
                     ScoreData data = scores[i];
                     data.score++;
                     scores[i] = data;
-
-                    found = true;
                     break;
                 }
             }
-
-            if (!found)
-            {
-                scores.Add(new ScoreData
-                {
-                    name = killer,
-                    score = 1
-                });
-            }
-        }
-
-        if (killLog != null)
-        {
-            AddKillLogClientRpc(killer, victim);
         }
     }
+
 
 
     void EndGame()
@@ -283,18 +260,26 @@ public class GameManager : NetworkBehaviour
 
     public void SpawnCPU(int count)
     {
-        if (!IsServer) return; // ✅ サーバーだけ
+        if (!IsServer) return;
 
         for (int i = 0; i < count; i++)
         {
             Vector3 pos = grid.GetSpawnPoint(i + 1);
+            pos.y = 1.5f; 
 
-            GameObject cpu = Instantiate(playerPrefab, pos, Quaternion.identity);
+            GameObject cpu = Instantiate(cpuPrefab, pos, Quaternion.identity);
 
             cpu.name = "CPU" + i;
 
             // Player操作削除
             Destroy(cpu.GetComponent<PlayerController>());
+
+            // ✅ 追加（最重要）
+            var spawner = cpu.GetComponent<BombSpawner>();
+            if (spawner != null)
+            {
+                spawner.isPlayer = false;
+            }
 
             // AI追加
             if (cpu.GetComponent<SimpleAI>() == null)
@@ -302,12 +287,11 @@ public class GameManager : NetworkBehaviour
                 cpu.AddComponent<SimpleAI>();
             }
 
-            // 名前設定
             cpu.GetComponent<PlayerHealth>().playerName = cpu.name;
 
-            // ✅ 最重要！！
             cpu.GetComponent<NetworkObject>().Spawn(true);
         }
+
         InitScores();
     }
 
@@ -328,19 +312,18 @@ public class GameManager : NetworkBehaviour
         killLog?.AddLog(killer, victim);
     }
 
-    public void AddDeath(string player)
+    public void AddDeath(ulong victimId)
     {
         if (!IsPlaying) return;
         if (!GameMode.IsSingle && !IsServer) return;
 
         for (int i = 0; i < scores.Count; i++)
         {
-            if (scores[i].name.ToString() == player)
+            if (scores[i].clientId == victimId)
             {
                 ScoreData data = scores[i];
                 data.score--;
                 scores[i] = data;
-                UpdateScoreUI();
                 return;
             }
         }

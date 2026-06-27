@@ -7,6 +7,7 @@ public class BombSpawner : NetworkBehaviour
     private int currentBomb = 0;
     private PlayerStats stats;
     private PlayerHealth health;
+    public bool isPlayer = true;
 
 
     void Start()
@@ -14,24 +15,6 @@ public class BombSpawner : NetworkBehaviour
         stats = GetComponent<PlayerStats>();
         health = GetComponent<PlayerHealth>();
     }
-
-
-    float lastPlaceTime = 0f;
-
-    void Update()
-    {
-        if (!GameMode.IsSingle && !IsOwner) return;
-        if (GameManager.Instance == null) return;
-        if (!GameManager.Instance.IsPlaying) return;
-
-        if (Input.GetMouseButtonDown(0) && Time.time - lastPlaceTime > 0.1f)
-        {
-            lastPlaceTime = Time.time;
-            TryPlaceBomb();
-        }
-    }
-
-
     public void TryPlaceBomb()
     {
         Vector3 pos = new Vector3(
@@ -63,7 +46,7 @@ public class BombSpawner : NetworkBehaviour
 
         Bomb b = bomb.GetComponent<Bomb>();
         b.power = stats.power.Value;
-        b.ownerId = 0; // ✅ 追加（シングル対策）
+        b.ownerId = health.clientId;
         b.ownerName = health.playerName;
         b.ownerSpawner = this;
         SetBombType(b);
@@ -90,7 +73,7 @@ public class BombSpawner : NetworkBehaviour
 
         Bomb b = bomb.GetComponent<Bomb>();
         b.power = stats.power.Value;
-        b.ownerId = OwnerClientId;
+        b.ownerId = health.clientId;
         b.ownerName = health.playerName;
         b.ownerSpawner = this;
 
@@ -150,7 +133,7 @@ public class BombSpawner : NetworkBehaviour
 
         Bomb b = bomb.GetComponent<Bomb>();
         b.power = stats.power.Value;
-        b.ownerId = OwnerClientId;
+        b.ownerId = health.clientId;
         b.ownerName = health.playerName;
         b.ownerSpawner = this;
 
@@ -163,6 +146,39 @@ public class BombSpawner : NetworkBehaviour
 
         currentBomb++;
     }
+    public void PlaceBombAI()
+    {
+        if (currentBomb >= stats.bombCount.Value) return;
+
+        Vector3 pos = new Vector3(
+            Mathf.Round(transform.position.x),
+            1,
+            Mathf.Round(transform.position.z)
+        );
+
+        if (health != null)
+        {
+            health.CancelInvincible();
+        }
+
+        GameObject bomb = Instantiate(bombPrefab, pos, Quaternion.identity);
+
+        Bomb b = bomb.GetComponent<Bomb>();
+        b.power = stats.power.Value;
+        b.ownerId = health.clientId;
+        b.ownerName = health.playerName;
+        b.ownerSpawner = this;
+
+        SetBombType(b);
+
+        if (!GameMode.IsSingle)
+        {
+            bomb.GetComponent<NetworkObject>().Spawn();
+        }
+
+        currentBomb++;
+    }
+
 
     public void BombDestroyed()
     {
