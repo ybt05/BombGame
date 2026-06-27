@@ -63,12 +63,14 @@ public class LobbyManager : MonoBehaviour
     // ホスト
     public void OnClickHost()
     {
+        SoundManager.Instance.PlaySE(SoundManager.Instance.clickSE);
         selectPanel.SetActive(false);
         hostPanel1.SetActive(true);
     }
 
     public async void OnClickHostConfirm()
     {
+        SoundManager.Instance.PlaySE(SoundManager.Instance.clickSE);
         myName = hostNameInput.text;
         LobbyData.MyName = myName;
 
@@ -101,12 +103,14 @@ public class LobbyManager : MonoBehaviour
     // クライアント
     public void OnClickClient()
     {
+        SoundManager.Instance.PlaySE(SoundManager.Instance.clickSE);
         selectPanel.SetActive(false);
         clientPanel1.SetActive(true);
     }
 
     public async void OnClickJoin()
     {
+        SoundManager.Instance.PlaySE(SoundManager.Instance.clickSE);
         if (NetworkManager.Singleton != null &&
             NetworkManager.Singleton.ConnectedClientsList.Count >= 10)
         {
@@ -146,6 +150,7 @@ public class LobbyManager : MonoBehaviour
     // ゲーム開始（ホストのみ）
     public void OnClickStartGame()
     {
+        SoundManager.Instance.PlaySE(SoundManager.Instance.clickSE);
         if (!NetworkManager.Singleton.IsHost) return;
 
         players.Clear(); // ✅ 追加（初期化）
@@ -162,6 +167,7 @@ public class LobbyManager : MonoBehaviour
     // 解散
     public void OnClickDisband()
     {
+        SoundManager.Instance.PlaySE(SoundManager.Instance.clickSE);
         NetworkManager.Singleton.Shutdown();
 
         SceneManager.LoadScene("TitleScene");
@@ -171,6 +177,7 @@ public class LobbyManager : MonoBehaviour
     // 抜ける
     public void OnClickLeave()
     {
+        SoundManager.Instance.PlaySE(SoundManager.Instance.clickSE);
         NetworkManager.Singleton.Shutdown();
 
         SceneManager.LoadScene("TitleScene");
@@ -178,6 +185,7 @@ public class LobbyManager : MonoBehaviour
 
     public void OnClickBackToTitle()
     {
+        SoundManager.Instance.PlaySE(SoundManager.Instance.clickSE);
         SceneManager.LoadScene("TitleScene");
     }
 

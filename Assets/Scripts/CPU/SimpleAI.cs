@@ -36,6 +36,11 @@ public class SimpleAI : NetworkBehaviour
         if (!GameManager.Instance) return;
         if (!GameManager.Instance.IsPlaying) return;
 
+        // ✅ 追加（これが本命）
+        var health = GetComponent<PlayerHealth>();
+        if (health != null && health.IsDead()) return;
+
+
         timer += Time.deltaTime;
 
         if (timer >= decisionInterval)
@@ -49,6 +54,15 @@ public class SimpleAI : NetworkBehaviour
     void FixedUpdate()
     {
         if (!GameMode.IsSingle && !IsServer) return; // ✅ 追加
+
+        // ✅ 追加
+        var health = GetComponent<PlayerHealth>();
+        if (health != null && health.IsDead())
+        {
+            rb.linearVelocity = Vector3.zero;
+            return;
+        }
+
         if (!canAct)
         {
             rb.linearVelocity = Vector3.zero;

@@ -64,6 +64,7 @@ public class PlayerController : NetworkBehaviour
 
             if (spawner != null)
             {
+                SoundManager.Instance.PlaySE(SoundManager.Instance.actionSE);
                 spawner.TryPlaceBomb(); // ✅ 正解
             }
         }

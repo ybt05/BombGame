@@ -92,6 +92,7 @@ public class PlayerHealth : NetworkBehaviour
     IEnumerator Death()
     {
         isDead = true;
+        SoundManager.Instance.PlaySE(SoundManager.Instance.deathSE);
 
         // ✅ 追加：即非表示
         foreach (var r in rends)

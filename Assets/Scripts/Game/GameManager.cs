@@ -148,7 +148,7 @@ public class GameManager : NetworkBehaviour
             text += $"{s.name} : {s.score}\n";
         }
 
-        scoreText.text = text;
+        //scoreText.text = text;
     }
 
 
@@ -243,17 +243,20 @@ public class GameManager : NetworkBehaviour
             rank++;
         }
 
-        resultText.text = text;
+        //resultText.text = text;
     }
 
     public void OnClickOK()
     {
+        SoundManager.Instance.PlaySE(SoundManager.Instance.clickSE);
         if (GameMode.IsSingle)
         {
+            SoundManager.Instance.StopBGM();
             SceneManager.LoadScene("TitleScene");
         }
         else
         {
+            SoundManager.Instance.StopBGM();
             SceneManager.LoadScene("LobbyScene");
         }
     }
@@ -265,7 +268,7 @@ public class GameManager : NetworkBehaviour
         for (int i = 0; i < count; i++)
         {
             Vector3 pos = grid.GetSpawnPoint(i + 1);
-            pos.y = 1.5f; 
+            pos.y = 1.5f;
 
             GameObject cpu = Instantiate(cpuPrefab, pos, Quaternion.identity);
 

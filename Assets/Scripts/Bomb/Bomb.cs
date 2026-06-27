@@ -136,6 +136,7 @@ public class Bomb : NetworkBehaviour
             Mathf.Round(transform.position.z)
         );
         SpawnExplosionEffect(basePos);
+        SoundManager.Instance.PlaySE(SoundManager.Instance.bombSE);
 
         Collider[] centerHits = Physics.OverlapBox(basePos, Vector3.one * 0.3f);
 

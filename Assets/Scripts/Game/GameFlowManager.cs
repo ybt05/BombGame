@@ -33,6 +33,7 @@ public class GameFlowManager : NetworkBehaviour
 
     IEnumerator GameFlow()
     {
+        SoundManager.Instance.PlayBGM();
         yield return new WaitForSeconds(0.5f);
 
         SpawnAllPlayers();
