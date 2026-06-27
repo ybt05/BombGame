@@ -1820,6 +1820,7 @@ MonoBehaviour:
   scoreText: {fileID: 1939368084}
   killLog: {fileID: 1805849356}
   grid: {fileID: 2044694289}
+  cpuPrefab: {fileID: 3306551204263940639, guid: 0986a73b83dad874392c2d7ff9e6eb0a, type: 3}
   scores:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
